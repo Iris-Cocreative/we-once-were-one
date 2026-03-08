@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Text on Spiral Path</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Space+Mono:wght@400;700&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --path-color: rgba(255,255,255,0.06);
+    --text-color: #e8e0d4;
+    --accent: #c9a87c;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text-color);
+    font-family: 'Courier Prime', 'Courier New', Courier, monospace;
+    overflow-x: hidden;
+  }
+
+  .scroll-container {
+    height: 500vh;
+    position: relative;
+  }
+
+  .sticky-frame {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .svg-container {
+    width: 90vw;
+    max-width: 1200px;
+    height: auto;
+    position: relative;
+  }
+
+  svg {
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+
+  .spiral-path {
+    fill: none;
+    stroke: var(--path-color);
+    stroke-width: 1;
+    stroke-dasharray: 4 8;
+  }
+
+  .scroll-hint {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.25);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    transition: opacity 0.8s ease;
+    z-index: 10;
+  }
+
+  .scroll-hint .arrow {
+    width: 1px;
+    height: 28px;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.25), transparent);
+    animation: pulse-down 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-down {
+    0%, 100% { transform: translateY(0); opacity: 0.6; }
+    50% { transform: translateY(6px); opacity: 1; }
+  }
+
+  .grain {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 100;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 256px 256px;
+  }
+
+  .ambient-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(ellipse at center, rgba(201,168,124,0.06) 0%, transparent 70%);
+    pointer-events: none;
+    border-radius: 50%;
+  }
+
+  .progress-track {
+    position: fixed;
+    right: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 2px;
+    height: 120px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 1px;
+    z-index: 10;
+  }
+
+  .progress-fill {
+    position: absolute;
+    top: 0;
+    width: 100%;
+    height: 0%;
+    background: var(--accent);
+    border-radius: 1px;
+    transition: height 0.1s ease-out;
+    opacity: 0.5;
+  }
+</style>
+</head>
+<body>
+
+<div class="grain"></div>
+
+<div class="scroll-container" id="scrollContainer">
+  <div class="sticky-frame">
+    <div class="ambient-glow"></div>
+    <div class="svg-container">
+      <svg id="spiralSvg" viewBox="0 0 1366 911" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <path id="spiralPath"
+            d="M81.22,127.67c579.83,0,397.72,491.92,621.7,632.17,223.98,140.25,613.33,62.8,579.83-274.22-33.49-337.02-439.59-401.91-548.44-240.73-108.85,161.18-69.08,521.22,192.58,477.26,261.66-43.96,349.58-265.84,261.66-380.97-87.92-115.13-328.64-194.67-378.88-94.2-50.24,100.48-129.78,387.25,25.12,374.69,154.9-12.56,286.78-96.29,194.67-184.21-92.1-87.92-146.53-200.95-175.83-94.2-29.31,106.76-98.38,180.02-41.87,192.58,56.52,12.56,164.11-2.65,153.23-58.89s-86.24-114.85-94.62-72.99c-8.37,41.87-50.24,106.76,2.09,87.92"
+          />
+        </defs>
+
+        <use href="#spiralPath" class="spiral-path"/>
+        <g id="textGroup"></g>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<div class="scroll-hint" id="scrollHint">
+  <span>scroll to animate</span>
+  <div class="arrow"></div>
+</div>
+
+<div class="progress-track">
+  <div class="progress-fill" id="progressFill"></div>
+</div>
+
+<script>
+  const scrollContainer = document.getElementById('scrollContainer');
+  const textGroup = document.getElementById('textGroup');
+  const scrollHint = document.getElementById('scrollHint');
+  const progressFill = document.getElementById('progressFill');
+  const pathEl = document.querySelector('#spiralPath');
+  const pathLength = pathEl.getTotalLength();
+
+  const fullText = "The path winds inward like a thought returning to itself · through loops of meaning and echoes of form · each curve a question folding into the next · spiraling toward some quiet center where words dissolve into pure geometry · and the line between language and shape grows thin · until all that remains is the trace of movement · a whisper caught in the arc of becoming · descending gently into the stillness at the heart of the spiral · where every ending is also a beginning · ";
+
+  const BASE_FONT_SIZE = 14;
+  const BASE_CHAR_ADVANCE = 9; // monospace base advance in px at base font size
+  const svgNS = "http://www.w3.org/2000/svg";
+
+  // Magnification at the START (outer entry) of the path, 25% zone
+  const MAGNIFY_ZONE = 0.25;
+  const MAGNIFY_END = pathLength * MAGNIFY_ZONE;
+  const MAX_SCALE = 3.2;
+
+  // Precompute scale for a given path position
+  function getScale(pos) {
+    if (pos >= 0 && pos < MAGNIFY_END) {
+      const zoneT = 1 - (pos / MAGNIFY_END);
+      const eased = zoneT * zoneT * (3 - 2 * zoneT);
+      return 1 + (MAX_SCALE - 1) * eased;
+    }
+    return 1;
+  }
+
+  // Build per-character elements
+  const charData = [];
+
+  for (let i = 0; i < fullText.length; i++) {
+    const textEl = document.createElementNS(svgNS, "text");
+    textEl.setAttribute("font-family", "'Courier Prime', 'Courier New', Courier, monospace");
+    textEl.setAttribute("font-weight", "400");
+    textEl.setAttribute("fill", "#e8e0d4");
+    textEl.setAttribute("font-size", BASE_FONT_SIZE);
+    textEl.setAttribute("opacity", "0");
+
+    const tpEl = document.createElementNS(svgNS, "textPath");
+    tpEl.setAttribute("href", "#spiralPath");
+    tpEl.textContent = fullText[i];
+
+    textEl.appendChild(tpEl);
+    textGroup.appendChild(textEl);
+
+    charData.push({
+      char: fullText[i],
+      textEl,
+      tpEl,
+      pathPos: 0,    // will be computed dynamically
+    });
+  }
+
+  // Scroll mapping
+  const scrollStart = pathLength + 100;
+  const scrollEnd = -(fullText.length * BASE_CHAR_ADVANCE * MAX_SCALE) - 100;
+
+  let current = scrollStart;
+  let target = scrollStart;
+  let hasScrolled = false;
+
+  const FADE_IN_DIST = pathLength * 0.03;
+  const FADE_OUT_DIST = pathLength * 0.06;
+
+  function getProgress() {
+    const st = window.scrollY;
+    const max = scrollContainer.scrollHeight - window.innerHeight;
+    return Math.min(Math.max(st / max, 0), 1);
+  }
+
+  function update() {
+    const p = getProgress();
+    target = scrollStart + (scrollEnd - scrollStart) * p;
+    current += (target - current) * 0.12;
+
+    // Key insight: because characters in the magnified zone are bigger,
+    // their advance (spacing) must also be bigger. We need to place each
+    // character by accumulating scaled advances, not fixed offsets.
+    //
+    // We walk through characters, placing each one at an accumulated
+    // path position. The advance for each character depends on the scale
+    // at its current position — which depends on where it is — so we
+    // iterate and accumulate.
+
+    let accumulatedPos = current; // path position of first character
+
+    for (let i = 0; i < charData.length; i++) {
+      const d = charData[i];
+      const pos = accumulatedPos;
+      d.pathPos = pos;
+
+      // Set position
+      d.tpEl.setAttribute("startOffset", ((pos / pathLength) * 100) + "%");
+
+      // Compute scale at this position
+      const scale = (pos >= 0 && pos <= pathLength) ? getScale(pos) : 1;
+
+      // Font size
+      const fontSize = BASE_FONT_SIZE * scale;
+      d.textEl.setAttribute("font-size", fontSize.toFixed(1));
+
+      // Advance to next character: spacing scales with the font
+      const charAdvance = BASE_CHAR_ADVANCE * scale;
+      accumulatedPos += charAdvance;
+
+      // Off-path: hide
+      if (pos < -30 || pos > pathLength + 30) {
+        d.textEl.setAttribute("opacity", "0");
+        continue;
+      }
+
+      // Opacity: fade at edges
+      const fadeIn = Math.min(Math.max(pos / FADE_IN_DIST, 0), 1);
+      const fadeOut = Math.min(Math.max((pathLength - pos) / FADE_OUT_DIST, 0), 1);
+      const alpha = Math.min(fadeIn, fadeOut);
+      d.textEl.setAttribute("opacity", alpha.toFixed(2));
+    }
+
+    progressFill.style.height = (p * 100) + '%';
+
+    if (!hasScrolled && p > 0.01) {
+      hasScrolled = true;
+      scrollHint.style.opacity = '0';
+    }
+
+    requestAnimationFrame(update);
+  }
+
+  update();
+</script>
+
+</body>
+</html>
